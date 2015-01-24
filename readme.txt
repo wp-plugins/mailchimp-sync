@@ -16,7 +16,8 @@ Synchronize your registered WordPress users with a MailChimp list of your choice
 
 **This plugin is still in beta. You can definitely use it but it _could_ be subject to changes breaking backwards compatibility.**
 
-> This plugin depends on the [MailChimp for WordPress plugin](https://wordpress.org/plugins/mailchimp-for-wp/).
+> This plugin is an add-on for [MailChimp for WordPress plugin](https://wordpress.org/plugins/mailchimp-for-wp/).
+> To use it, you need at least MailChimp for WordPress v2.2.3 or MailChimp for WordPress Premium 2.5.5.
 
 = MailChimp Sync, at a glance.. =
 
