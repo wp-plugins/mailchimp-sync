@@ -8,17 +8,15 @@ Stable tag: 0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Synchronize your WP Users with a MailChimp list
+Synchronize your WP Users with a MailChimp list of choice.
 
 == Description ==
 
-Synchronize your registered WordPress users with a MailChimp list.
-
-> **This plugin is an add-on for MailChimp for WordPress**
->
-> This plugin depends on the [MailChimp for WordPress plugin](https://wordpress.org/plugins/mailchimp-for-wp/).
+Synchronize your registered WordPress users with a MailChimp list of your choice.
 
 **This plugin is still in beta. You can definitely use it but it _could_ be subject to changes breaking backwards compatibility.**
+
+> This plugin depends on the [MailChimp for WordPress plugin](https://wordpress.org/plugins/mailchimp-for-wp/).
 
 = New Users =
 New users are automatically subscribed to your MailChimp list.
@@ -32,10 +30,16 @@ When a user is deleted from your site, they will be unsubscribed from the select
 = Existing Users =
 After activation, the plugin will listen to all changes in your userbase. This doesn't mean you can't synchronise existing users though. :)
 
-> **Development**
->
-> The development of [MailChimp Sync takes place on GitHub](https://github.com/dannyvankooten/wp-mailchimp-sync). [Bugs](https://github.com/dannyvankooten/wp-mailchimp-sync/issues) and pull requests are welcomed there.
+**Development: Bug Reports & Pull Requests**
 
+Bug reports (and Pull Requests) for [MailChimp Sync are welcomed on GitHub](https://github.com/dannyvankooten/mailchimp-sync). Please note that GitHub is _not_ a support forum.
+
+**More information**
+
+- [MailChimp for WordPress](https://wordpress.org/plugins/mailchimp-for-wp/)
+- Developers; follow or contribute to the [MailChimp Sync plugin on GitHub](https://github.com/dannyvankooten/mailchimp-sync)
+- Other [WordPress plugins](https://dannyvankooten.com/wordpress-plugins/#utm_source=wp-plugin-repo&utm_medium=link&utm_campaign=more-info-link) by [Danny van Kooten](https://dannyvankooten.com#utm_source=wp-plugin-repo&utm_medium=link&utm_campaign=more-info-link)
+- [@DannyvanKooten](https://twitter.com/dannyvankooten) on Twitter
 
 == Installation ==
 
