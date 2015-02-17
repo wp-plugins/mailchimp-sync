@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) or exit;
 		<table class="form-table">
 
 			<tr valign="top">
-				<th scope="row"><label for="<?php echo $this->name_attr( 'list' ); ?>"><?php _e( 'Sync users with this list', 'mailchimp-sync' ); ?></label></th>
+				<th scope="row"><?php _e( 'Sync users with this list', 'mailchimp-sync' ); ?></th>
 				<td>
 					<?php if( empty( $lists ) ) {
 						printf( __( 'No lists found, <a href="%s">are you connected to MailChimp</a>?', 'mailchimp-for-wp' ), admin_url( 'admin.php?page=mailchimp-for-wp' ) ); ?>
@@ -79,7 +79,7 @@ defined( 'ABSPATH' ) or exit;
 				</th>
 				<td>
 					<?php
-					if( $statusIndicator->status ) {
+					if( $status_indicator->status ) {
 						echo '<span class="status positive">' . __( 'IN SYNC', 'mailchimp-sync' ) . '</span>';
 					} else {
 						echo '<span class="status negative">' . __( 'OUT OF SYNC', 'mailchimp-sync' ) . '</span>';
@@ -91,7 +91,7 @@ defined( 'ABSPATH' ) or exit;
 					<?php _e( 'Subscribed Users / Total Users', 'mailchimp-sync' ); ?>
 				</th>
 				<td>
-					<?php echo $statusIndicator->subscriber_count . '/' . $statusIndicator->user_count; ?>
+					<?php echo $status_indicator->subscriber_count . '/' . $status_indicator->user_count; ?>
 				</td>
 			</tr>
 			<tr valign="top">

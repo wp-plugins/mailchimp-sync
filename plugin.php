@@ -14,7 +14,7 @@ final class Plugin {
 	/**
 	 * @const VERSION
 	 */
-	const VERSION = '1.0';
+	const VERSION = '0.1.1';
 
 	/**
 	 * @const FILE
@@ -106,7 +106,7 @@ final class Plugin {
 		$defaults = array(
 			'list' => '',
 			'double_optin' => 0,
-			'send_welcome' => 0
+			'send_welcome' => 0,
 		);
 
 		$options = array_merge( $defaults, $options );
