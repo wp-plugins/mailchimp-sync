@@ -79,13 +79,13 @@ Please open a topic on the [WordPress.org plugin support forums](https://wordpre
 
 **Fixes**
 
-- Synchronising would stop if a synchronise request failed
-- Conflict with other plugins bundling old versions of Composer, throwing a fatal error on plugin activation
-- Users who were deleted from a list would cause issues, they're now re-subscribed.
+- Synchronising would stall if any user failed to sync.
+- Conflict with other plugins bundling old versions of Composer, throwing a fatal error on plugin activation.
+- Users who were synchronised and then manually deleted from a list were not re-subscribed.
 
 **Improvements**
 
-- Added some feedback to Log whether a synchronisation request succeeded or not.
+- Log now shows whether a synchronisation request actually succeeded or not.
 
 = 0.1.1 - February 17, 2015 =
 
@@ -108,6 +108,5 @@ Initial release.
 
 == Upgrade Notice ==
 
-= 0.1.1 =
-Various JavaScript improvements and bugfixes. Please make sure you're on the latest version of MailChimp for WordPress before updating.
-
+= 0.1.2 =
+Fixes issue where Forced Sync would stall if any user failed to syn.
