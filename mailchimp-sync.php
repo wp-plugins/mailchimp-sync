@@ -2,10 +2,10 @@
 /*
 Plugin Name: MailChimp Sync
 Plugin URI: https://mc4wp.com/
-Description: Synchronizes WP Users with a MailChimp list
-Version: 0.1.2
-Author: Danny van Kooten
-Author URI: https://dannyvankooten.com
+Description: Synchronize your WordPress Users with a MailChimp list.
+Version: 1.0
+Author: ibericode
+Author URI: http://ibericode.com/
 Text Domain: mailchimp-sync
 Domain Path: /languages
 License: GPL v3
@@ -36,10 +36,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Check if PHP is at the minimum required version
 if( version_compare( PHP_VERSION, '5.3', '>=' ) ) {
+
 	define( 'MAILCHIMP_SYNC_FILE', __FILE__ );
-	require_once dirname( __FILE__ ) . '/plugin.php';
+	require dirname( __FILE__ ) . '/vendor/autoload.php';
+	require dirname( __FILE__ ) . '/plugin.php';
 } else {
-	require_once dirname( __FILE__ ) . '/php-backwards-compatibility.php';
+	require dirname( __FILE__ ) . '/php-backwards-compatibility.php';
 }
 
 
