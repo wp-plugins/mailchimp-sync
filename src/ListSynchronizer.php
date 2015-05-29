@@ -2,6 +2,8 @@
 
 namespace MailChimp\Sync;
 
+use WP_User;
+
 class ListSynchronizer {
 
 
@@ -9,6 +11,11 @@ class ListSynchronizer {
 	 * @var string The List ID to sync with
 	 */
 	private $list_id;
+
+	/**
+	 * @var string
+	 */
+	private $user_role = '';
 	/**
 	 * @var string
 	 */
@@ -30,12 +37,15 @@ class ListSynchronizer {
 
 	/**
 	 * Constructor
+	 *
 	 * @param string $list_id
-	 * @param array $settings
+	 * @param string $user_role
+	 * @param array  $settings
 	 */
-	public function __construct( $list_id, array $settings = null ) {
+	public function __construct( $list_id, $user_role = '', array $settings = null ) {
 
 		$this->list_id = $list_id;
+		$this->user_role = $user_role;
 
 		// generate meta key name
 		$this->meta_key = $this->meta_key . '_' . $this->list_id;
@@ -67,7 +77,12 @@ class ListSynchronizer {
 		$user =  get_user_by( 'id', $user_id );
 
 		// do nothing if user has no valid email
-		if( '' === $user->user_email || ! is_email( $user->user_email ) ) {
+		if(  ! $user instanceof WP_User || '' === $user->user_email || ! is_email( $user->user_email ) ) {
+			return false;
+		}
+
+		// if role is set, make sure user has that role
+		if( '' !== $this->user_role && ! in_array( $this->user_role, $user->roles ) ) {
 			return false;
 		}
 
@@ -101,7 +116,7 @@ class ListSynchronizer {
 		// get subscriber uid from user meta
 		$subscriber_uid = get_user_meta( $user_id, $this->meta_key, true );
 
-		if( '' !== $subscriber_uid ) {
+		if( is_string( $subscriber_uid ) && '' !== $subscriber_uid ) {
 
 			// unsubscribe user email from the selected list
 			$api = mc4wp_get_api();
@@ -130,14 +145,19 @@ class ListSynchronizer {
 		$subscriber_uid = get_user_meta( $user_id, $this->meta_key, true );
 
 		// if subscriber uid is empty, add to list
-		if( $subscriber_uid === '' ) {
+		if( ! is_string( $subscriber_uid ) || $subscriber_uid === '' ) {
 			return $this->subscribe_user( $user_id );
 		}
 
 		$user = get_user_by( 'id', $user_id );
 
 		// do nothing if user has no valid email
-		if( '' === $user->user_email || ! is_email( $user->user_email ) ) {
+		if( ! $user instanceof WP_User || '' === $user->user_email || ! is_email( $user->user_email ) ) {
+			return false;
+		}
+
+		// if role is set, make sure user has that role
+		if( '' !== $this->user_role && ! in_array( $this->user_role, $user->roles ) ) {
 			return false;
 		}
 
@@ -175,7 +195,12 @@ class ListSynchronizer {
 			$data['LNAME'] = $user->last_name;
 		}
 
-		// todo: map other fields
+		if( '' !== $user->first_name  && '' !== $user->last_name ) {
+			$data['NAME'] = sprintf( '%s %s', $user->first_name, $user->last_name );
+		}
+
+		// Allow other WP extensions to set other list fields (merge variables).
+		$data = apply_filters( 'mailchimp_sync_user_data', $data, $user );
 
 		return $data;
 	}

@@ -18,10 +18,14 @@ class Manager {
 	 * @param array $options
 	 */
 	public function __construct( array $options ) {
-
 		$this->options = $options;
 		$this->plugin_slug = basename( Plugin::DIR ) . '/mailchimp-sync.php';
+	}
 
+	/**
+	 * Add hooks
+	 */
+	public function add_hooks() {
 		add_action( 'admin_init', array( $this, 'init' ) );
 		add_filter( 'mc4wp_menu_items', array( $this, 'add_menu_items' ) );
 	}
@@ -142,8 +146,8 @@ class Manager {
 		wp_enqueue_style( 'mailchimp-sync-admin', $this->asset_url( "/css/admin{$min}.css" ) );
 
 		wp_enqueue_script( 'es5-polyfill', 'https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.0.3/es5-shim.min.js' );
-		wp_enqueue_script( 'mithril', $this->asset_url( "/js/deps/mithril{$min}.js" ), array( 'es5-polyfill' ), Plugin::VERSION, true );
-		wp_enqueue_script( 'mailchimp-sync-wizard', $this->asset_url( "/js/wizard{$min}.js" ), array( 'mithril' ), Plugin::VERSION, true );
+		wp_enqueue_script( 'mithril', $this->asset_url( "/js/mithril{$min}.js" ), array( 'es5-polyfill' ), Plugin::VERSION, true );
+		wp_enqueue_script( 'mailchimp-sync-wizard', $this->asset_url( "/js/admin{$min}.js" ), array( 'mithril' ), Plugin::VERSION, true );
 
 		return true;
 	}
@@ -159,7 +163,8 @@ class Manager {
 		$lists = $mailchimp->get_lists();
 
 		if( $this->options['list'] !== '' ) {
-			$status_indicator = new StatusIndicator( $this->options['list'] );
+			$status_indicator = new StatusIndicator( $this->options['list'], $this->options['role'] );
+			$status_indicator->check();
 			$selected_list = $mailchimp->get_list( $this->options['list'] );
 		}
 
