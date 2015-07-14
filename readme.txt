@@ -1,10 +1,10 @@
 === MailChimp Sync ===
-Contributors: DvanKooten, ibericode, iMazed, hchouhan
-Donate link: https://mc4wp.com/
-Tags: mailchimp,users,sync,mailchimp list,synchronize,zapier,woocommerce
+Contributors: Ibericode, DvanKooten, iMazed, hchouhan
+Donate link: https://mc4wp.com/#utm_source=wp-plugin-repo&utm_medium=mailchimp-sync&utm_campaign=donate-link
+Tags: mailchimp,users,sync,mailchimp list,synchronize,zapier,woocommerce,mc4wp
 Requires at least: 3.8
 Tested up to: 4.2.2
-Stable tag: 1.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ Synchronize your WordPress Users with a MailChimp list.
 
 Synchronize your registered WordPress users with a MailChimp list of your choice.
 
-> To use MailChimp Sync, please install either the free or the premium version of the [MailChimp for WordPress plugin](https://mc4wp.com/#utm_source=wp-plugin-repo&utm_medium=mailchimp-sync&utm_campaign=info/).
+> To use MailChimp Sync, please install either the free or the premium version of the [MailChimp for WordPress plugin](https://mc4wp.com/#utm_source=wp-plugin-repo&utm_medium=mailchimp-sync&utm_campaign=info).
 
 = MailChimp Sync, at a glance.. =
 
@@ -36,7 +36,8 @@ Bug reports (and Pull Requests) for [MailChimp Sync are welcomed on GitHub](http
 
 **More information**
 
-- [MailChimp for WordPress](https://mc4wp.com/#utm_source=wp-plugin-repo&utm_medium=mailchimp-sync&utm_campaign=info/)
+- [MailChimp for WordPress](https://mc4wp.com/#utm_source=wp-plugin-repo&utm_medium=mailchimp-sync&utm_campaign=more-info-link)
+- Other [add-ons for MailChimp for WordPress](https://mc4wp.com/add-ons/#utm_source=wp-plugin-repo&utm_medium=mailchimp-sync&utm_campaign=more-info-link)
 - Developers; follow or contribute to the [MailChimp Sync plugin on GitHub](https://github.com/ibericode/mailchimp-sync)
 - Other [WordPress plugins](https://dannyvankooten.com/wordpress-plugins/#utm_source=wp-plugin-repo&utm_medium=link&utm_campaign=more-info-link) by [Danny van Kooten](https://dannyvankooten.com#utm_source=wp-plugin-repo&utm_medium=link&utm_campaign=more-info-link)
 - [@DannyvanKooten](https://twitter.com/dannyvankooten) on Twitter
@@ -98,6 +99,13 @@ This is especially useful for synchronising a huge amount of users.
 
 == Changelog ==
 
+= 1.0.1 - July 14, 2015 =
+
+**Improvements**
+
+- More detailed error message are now shown in the log.
+- Force Sync will now start with unsynced users.
+
 = 1.0 - May 29, 2015 =
 
 **Fixes**
@@ -150,5 +158,5 @@ Initial release.
 
 == Upgrade Notice ==
 
-= 1.0 =
-Fix for large data sets, sync a specific user role only, WP CLI commands & various other improvements.
+= 1.0.1 =
+Forced Sync will now start with unsynced users and show more detailed error messages.
