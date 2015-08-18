@@ -18,10 +18,14 @@ class Manager {
 	 * @param array $options
 	 */
 	public function __construct( array $options ) {
-
 		$this->options = $options;
 		$this->plugin_slug = basename( Plugin::DIR ) . '/mailchimp-sync.php';
+	}
 
+	/**
+	 * Add hooks
+	 */
+	public function add_hooks() {
 		add_action( 'admin_init', array( $this, 'init' ) );
 		add_filter( 'mc4wp_menu_items', array( $this, 'add_menu_items' ) );
 	}
@@ -122,7 +126,7 @@ class Manager {
 			return $links;
 		}
 
-		$links[] = sprintf( __( 'An add-on for %s', 'mailchimp-sync' ), '<a href="https://mc4wp.com/">MailChimp for WordPress</a>' );
+		$links[] = sprintf( __( 'An add-on for %s', 'mailchimp-sync' ), '<a href="https://mc4wp.com/#utm_source=wp-plugin&utm_medium=mailchimp-top-bar&utm_campaign=plugins-page">MailChimp for WordPress</a>' );
 		return $links;
 	}
 
@@ -142,8 +146,8 @@ class Manager {
 		wp_enqueue_style( 'mailchimp-sync-admin', $this->asset_url( "/css/admin{$min}.css" ) );
 
 		wp_enqueue_script( 'es5-polyfill', 'https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.0.3/es5-shim.min.js' );
-		wp_enqueue_script( 'mithril', $this->asset_url( "/js/deps/mithril{$min}.js" ), array( 'es5-polyfill' ), Plugin::VERSION, true );
-		wp_enqueue_script( 'mailchimp-sync-wizard', $this->asset_url( "/js/wizard{$min}.js" ), array( 'mithril' ), Plugin::VERSION, true );
+		wp_enqueue_script( 'mithril', $this->asset_url( "/js/mithril{$min}.js" ), array( 'es5-polyfill' ), Plugin::VERSION, true );
+		wp_enqueue_script( 'mailchimp-sync-wizard', $this->asset_url( "/js/admin{$min}.js" ), array( 'mithril' ), Plugin::VERSION, true );
 
 		return true;
 	}
@@ -155,12 +159,12 @@ class Manager {
 	 */
 	public function show_settings_page() {
 
-		$mailchimp = new \MC4WP_MailChimp();
-		$lists = $mailchimp->get_lists();
+		$lists = $this->get_mailchimp_lists();
 
 		if( $this->options['list'] !== '' ) {
-			$status_indicator = new StatusIndicator( $this->options['list'] );
-			$selected_list = $mailchimp->get_list( $this->options['list'] );
+			$status_indicator = new StatusIndicator( $this->options['list'], $this->options['role'] );
+			$status_indicator->check();
+			$selected_list = isset( $lists[ $this->options['list'] ] ) ? $lists[ $this->options['list'] ] : null;
 		}
 
 		require Plugin::DIR . '/views/settings-page.php';
@@ -190,6 +194,28 @@ class Manager {
 		$clean = $dirty;
 
 		return $clean;
+	}
+
+	/**
+	 * Helper function to retrieve MailChimp lists through MailChimp for WordPress
+	 *
+	 * Will try v3.0+ first, then fallback to older versions.
+	 *
+	 * @return array
+	 */
+	protected function get_mailchimp_lists() {
+
+		if( class_exists( 'MC4WP_MailChimp_Tools' ) && method_exists( 'MC4WP_MailChimp_Tools', 'get_lists' ) ) {
+			return \MC4WP_MailChimp_Tools::get_lists();
+		}
+
+		/** @deprecated MailChimp for WordPress v3.0  */
+		if( class_exists( 'MC4WP_MailChimp' ) ) {
+			$mailchimp = new \MC4WP_MailChimp();
+			return $mailchimp->get_lists();
+		}
+
+		return array();
 	}
 
 
