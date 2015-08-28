@@ -12,9 +12,16 @@ class DependencyCheck {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
-		$this->dependencies_installed = $this->check_dependencies();
-		$this->add_actions();
+	public function __construct() {}
+
+	public function check() {
+		$check = $this->check_dependencies();
+
+		if( ! $check ) {
+			$this->add_actions();
+		}
+
+		return $check;
 	}
 
 	/**
@@ -33,6 +40,11 @@ class DependencyCheck {
 			return true;
 		}
 
+		// check for MailChimp for WordPress core
+		if( defined( 'MC4WP_VERSION' ) && version_compare( MC4WP_VERSION, '3.0', '>=' ) ) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -40,14 +52,7 @@ class DependencyCheck {
 	 * @return bool
 	 */
 	private function add_actions() {
-
-		// only add actions when dependencies are not installed
-		if( $this->dependencies_installed ) {
-			return false;
-		}
-
 		add_action( 'admin_notices', array( $this, 'admin_notice' ) );
-
 		return true;
 	}
 

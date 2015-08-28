@@ -2,6 +2,8 @@
 
 namespace MailChimp\Sync;
 
+use WP_User;
+
 class ListSynchronizer {
 
 
@@ -9,10 +11,20 @@ class ListSynchronizer {
 	 * @var string The List ID to sync with
 	 */
 	private $list_id;
+
 	/**
 	 * @var string
 	 */
-	private $meta_key = 'mailchimp_sync';
+	private $user_role = '';
+	/**
+	 * @var string
+	 */
+	public $meta_key = 'mailchimp_sync';
+
+	/**
+	 * @var string
+	 */
+	public $error = '';
 
 	/**
 	 * @var array
@@ -25,17 +37,21 @@ class ListSynchronizer {
 		'email_type' => 'html',
 		'send_goodbye' => 0,
 		'send_notification' => 0,
-		'delete_member' => 0
+		'delete_member' => 0,
+		'field_mappers' => array()
 	);
 
 	/**
 	 * Constructor
+	 *
 	 * @param string $list_id
-	 * @param array $settings
+	 * @param string $user_role
+	 * @param array  $settings
 	 */
-	public function __construct( $list_id, array $settings = null ) {
+	public function __construct( $list_id, $user_role = '', array $settings = null ) {
 
 		$this->list_id = $list_id;
+		$this->user_role = $user_role;
 
 		// generate meta key name
 		$this->meta_key = $this->meta_key . '_' . $this->list_id;
@@ -44,6 +60,9 @@ class ListSynchronizer {
 		if( $settings ) {
 			$this->settings = array_merge( $this->settings, $settings );
 		}
+
+		$this->log = new Log();
+		$this->tools = new Tools();
 	}
 
 	/**
@@ -57,6 +76,57 @@ class ListSynchronizer {
 	}
 
 	/**
+	 * @param mixed $user A user ID or a WP_User object
+	 *
+	 * @return bool|WP_User
+	 */
+	protected function get_user( $user ) {
+
+		if( ! is_object( $user ) ) {
+			$user = get_user_by( 'id', $user );
+		}
+
+		if( ! $user instanceof WP_User ) {
+			$this->error = 'Invalid user ID.';
+			return false;
+		}
+
+		return $user;
+	}
+
+	/**
+	 * @param WP_User $user
+	 *
+	 * @return string
+	 */
+	public function get_user_subscriber_uid( WP_User $user ) {
+		$subscriber_uid = get_user_meta( $user->ID, $this->meta_key, true );
+
+		if( is_string( $subscriber_uid ) && '' !== $subscriber_uid ) {
+			return $subscriber_uid;
+		}
+
+		return '';
+	}
+
+	/**
+	 * @param WP_User $user
+	 * @return bool
+	 */
+	public function should_sync_user( WP_User $user ) {
+
+		$sync = true;
+
+		// if role is set, make sure user has that role
+		if( '' !== $this->user_role && ! in_array( $this->user_role, $user->roles ) ) {
+			$sync = false;
+		}
+
+		// allow plugins to set their own criteria
+		return (bool) apply_filters( 'mailchimp_sync_should_sync_user', $sync, $user );
+	}
+
+	/**
 	 * Subscribes a user to the selected MailChimp list, stores a meta field with the subscriber uid
 	 *
 	 * @param int $user_id
@@ -64,10 +134,19 @@ class ListSynchronizer {
 	 */
 	public function subscribe_user( $user_id ) {
 
-		$user =  get_user_by( 'id', $user_id );
+		$user = $this->get_user( $user_id );
+		if( ! $user ) {
+			return false;
+		}
 
-		// do nothing if user has no valid email
+		// Only subscribe user if it has a valid email address
 		if( '' === $user->user_email || ! is_email( $user->user_email ) ) {
+			$this->error = 'Invalid email.';
+			return false;
+		}
+
+		// if role is set, make sure user has that role
+		if( ! $this->should_sync_user( $user ) ) {
 			return false;
 		}
 
@@ -87,6 +166,10 @@ class ListSynchronizer {
 			return true;
 		}
 
+		// store error message returned by API
+		$this->error = $api->get_error_message();
+		$this->log->write_line( sprintf( 'MailChimp Sync: Can not subscribe user %d. MailChimp returned the following error: %s', $user_id, $this->error ) );
+
 		return false;
 	}
 
@@ -99,9 +182,9 @@ class ListSynchronizer {
 	public function unsubscribe_user( $user_id ) {
 
 		// get subscriber uid from user meta
-		$subscriber_uid = get_user_meta( $user_id, $this->meta_key, true );
-
-		if( '' !== $subscriber_uid ) {
+		$user = $this->get_user( $user_id );
+		$subscriber_uid = $this->get_user_subscriber_uid( $user );
+		if( $subscriber_uid ) {
 
 			// unsubscribe user email from the selected list
 			$api = mc4wp_get_api();
@@ -126,18 +209,26 @@ class ListSynchronizer {
 	 */
 	public function update_subscriber( $user_id ) {
 
-		// get subscriber uid from user meta
-		$subscriber_uid = get_user_meta( $user_id, $this->meta_key, true );
+		// get user
+		$user = $this->get_user( $user_id );
+		if( ! $user ) {
+			return false;
+		}
 
-		// if subscriber uid is empty, add to list
-		if( $subscriber_uid === '' ) {
+		// get subscriber uid
+		$subscriber_uid = $this->get_user_subscriber_uid( $user );
+		if( ! $subscriber_uid ) {
 			return $this->subscribe_user( $user_id );
 		}
 
-		$user = get_user_by( 'id', $user_id );
+		// check email address
+		 if( '' === $user->user_email || ! is_email( $user->user_email ) ) {
+			$this->error = 'Invalid email.';
+			return false;
+		}
 
-		// do nothing if user has no valid email
-		if( '' === $user->user_email || ! is_email( $user->user_email ) ) {
+		// check if user should be synced
+		if( ! $this->should_sync_user( $user ) ) {
 			return false;
 		}
 
@@ -149,10 +240,16 @@ class ListSynchronizer {
 		$success = $api->update_subscriber( $this->list_id, array( 'leid' => $subscriber_uid ), $merge_vars, $this->settings['email_type'], $this->settings['replace_interests'] );
 
 		// TODO: Remove check for `get_error_code`, available since MailChimp for WP Lite 2.2.8 and MailChimp for WP Pro 2.6.3. Update dependency check in that case.
-		if( ! $success && ( ! method_exists( $api, 'get_error_code' ) || $api->get_error_code() === 232 ) ) {
+		if( ! $success ) {
+
 			// subscriber leid did not match anything in the list, remove it and re-subscribe.
-			delete_user_meta( $user_id, $this->meta_key );
-			return $this->subscribe_user( $user_id );
+			if( ! method_exists( $api, 'get_error_code' ) || $api->get_error_code() === 232 ) {
+				delete_user_meta( $user_id, $this->meta_key );
+				return $this->subscribe_user( $user_id );
+			}
+
+			$this->error = $api->get_error_message();
+			$this->log->write_line( sprintf( 'MailChimp Sync: Can not update user %d. MailChimp returned the following error: %s', $user_id, $this->error ) );
 		}
 
 		return $success;
@@ -175,7 +272,26 @@ class ListSynchronizer {
 			$data['LNAME'] = $user->last_name;
 		}
 
-		// todo: map other fields
+		if( '' !== $user->first_name  && '' !== $user->last_name ) {
+			$data['NAME'] = sprintf( '%s %s', $user->first_name, $user->last_name );
+		}
+
+		// Do we have mapping rules for user fields to mailchimp fields?
+		if( ! empty( $this->settings['field_mappers'] ) ) {
+
+			// loop through mapping rules
+			foreach( $this->settings['field_mappers'] as $rule ) {
+
+				// get field value
+				$value = $this->tools->get_user_field( $user, $rule['user_field'] );
+				if( is_string( $value ) ) {
+					$data[ $rule['mailchimp_field'] ] = $value;
+				}
+			}
+		}
+
+		// Allow other WP extensions to set other list fields (merge variables).
+		$data = apply_filters( 'mailchimp_sync_user_data', $data, $user );
 
 		return $data;
 	}
