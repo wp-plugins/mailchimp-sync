@@ -16,7 +16,7 @@ final class Plugin {
 	/**
 	 * @const VERSION
 	 */
-	const VERSION = '1.0.2';
+	const VERSION = '1.1';
 
 	/**
 	 * @const FILE
@@ -44,27 +44,24 @@ final class Plugin {
 	public function __construct() {	}
 
 	/**
-	 * @return bool
+	 * @var ListSynchronizer
 	 */
-	public function dependencies_met() {
-		// check dependencies and only continue if installed
-		$dependencyCheck = new DependencyCheck();
-		return $dependencyCheck->check();
-	}
+	public $list_synchronizer;
 
 	/**
 	 * Let's go...
 	 *
 	 * Runs at `plugins_loaded` priority 30.
 	 */
-	public function load() {
+	public function init() {
+
 		// load plugin options
 		$this->options = $this->load_options();
 
 		// if a list was selected, initialise the ListSynchronizer class
 		if( $this->options['list'] != '' && $this->options['enabled'] ) {
-			$listSyncer = new ListSynchronizer( $this->options['list'], $this->options['role'], $this->options );
-			$listSyncer->add_hooks();
+			$this->list_synchronizer = new ListSynchronizer( $this->options['list'], $this->options['role'], $this->options );
+			$this->list_synchronizer->add_hooks();
 		}
 
 		if( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -79,7 +76,7 @@ final class Plugin {
 			$ajax = new AjaxListener( $this->options );
 			$ajax->add_hooks();
 		} else {
-			$admin = new Admin\Manager( $this->options );
+			$admin = new Admin\Manager( $this->options, $this->list_synchronizer );
 			$admin->add_hooks();
 		}
 	}
@@ -96,7 +93,8 @@ final class Plugin {
 			'double_optin' => 0,
 			'send_welcome' => 0,
 			'role' => '',
-			'enabled' => 1
+			'enabled' => 1,
+			'field_mappers' => array()
 		);
 
 		$options = array_merge( $defaults, $options );
@@ -115,11 +113,12 @@ final class Plugin {
 
 // Instantiate plugin on a later hook.
 add_action( 'plugins_loaded', function() {
-	$plugin = new Plugin();
 
-	if( $plugin->dependencies_met() ) {
-		$plugin->load();
+	$ready = include __DIR__  .'/dependencies.php';
+	if( $ready ) {
+		$plugin = new Plugin();
+		$plugin->init();
+		$GLOBALS['MailChimp_Sync'] = $plugin;
 	}
 
-	$GLOBALS['MailChimp_Sync'] = $plugin;
 }, 20 );

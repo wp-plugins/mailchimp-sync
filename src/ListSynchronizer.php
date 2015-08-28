@@ -37,7 +37,8 @@ class ListSynchronizer {
 		'email_type' => 'html',
 		'send_goodbye' => 0,
 		'send_notification' => 0,
-		'delete_member' => 0
+		'delete_member' => 0,
+		'field_mappers' => array()
 	);
 
 	/**
@@ -90,6 +91,21 @@ class ListSynchronizer {
 		}
 
 		return $user;
+	}
+
+	/**
+	 * @param WP_User $user
+	 *
+	 * @return string
+	 */
+	public function get_user_subscriber_uid( WP_User $user ) {
+		$subscriber_uid = get_user_meta( $user->ID, $this->meta_key, true );
+
+		if( is_string( $subscriber_uid ) && '' !== $subscriber_uid ) {
+			return $subscriber_uid;
+		}
+
+		return '';
 	}
 
 	/**
@@ -165,9 +181,9 @@ class ListSynchronizer {
 	public function unsubscribe_user( $user_id ) {
 
 		// get subscriber uid from user meta
-		$subscriber_uid = get_user_meta( $user_id, $this->meta_key, true );
-
-		if( is_string( $subscriber_uid ) && '' !== $subscriber_uid ) {
+		$user = $this->get_user( $user_id );
+		$subscriber_uid = $this->get_user_subscriber_uid( $user );
+		if( $subscriber_uid ) {
 
 			// unsubscribe user email from the selected list
 			$api = mc4wp_get_api();
@@ -192,18 +208,20 @@ class ListSynchronizer {
 	 */
 	public function update_subscriber( $user_id ) {
 
-		// get subscriber uid from user meta
-		$subscriber_uid = get_user_meta( $user_id, $this->meta_key, true );
-
-		// if subscriber uid is empty, add to list
-		if( ! is_string( $subscriber_uid ) || $subscriber_uid === '' ) {
-			return $this->subscribe_user( $user_id );
-		}
-
+		// get user
 		$user = $this->get_user( $user_id );
 		if( ! $user ) {
 			return false;
-		} elseif( '' === $user->user_email || ! is_email( $user->user_email ) ) {
+		}
+
+		// get subscriber uid
+		$subscriber_uid = $this->get_user_subscriber_uid( $user );
+		if( ! $subscriber_uid ) {
+			return $this->subscribe_user( $user_id );
+		}
+
+		// check email address
+		 if( '' === $user->user_email || ! is_email( $user->user_email ) ) {
 			$this->error = 'Invalid email.';
 			return false;
 		}
@@ -255,6 +273,28 @@ class ListSynchronizer {
 
 		if( '' !== $user->first_name  && '' !== $user->last_name ) {
 			$data['NAME'] = sprintf( '%s %s', $user->first_name, $user->last_name );
+		}
+
+		// Do we have mapping rules for user fields to mailchimp fields?
+		if( ! empty( $this->settings['field_mappers'] ) ) {
+
+			// loop through mapping rules
+			foreach( $this->settings['field_mappers'] as $rule ) {
+
+				// does user have this property?
+				if( ! $user->has_prop( $rule['user_field'] ) ) {
+					continue;
+				}
+
+				// get value and check if it's usable
+				// todo: check if we're not getting a hidden field?
+				$value = $user->get( $rule['user_field'] );
+				if( ! is_scalar( $value ) || strlen( $value ) === 0 ) {
+					continue;
+				}
+
+				$data[ $rule['mailchimp_field'] ] = $value;
+			}
 		}
 
 		// Allow other WP extensions to set other list fields (merge variables).

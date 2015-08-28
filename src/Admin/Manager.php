@@ -3,6 +3,8 @@
 namespace MailChimp\Sync\Admin;
 
 use MailChimp\Sync\Plugin;
+use MailChimp\Sync\ListSynchronizer;
+use WP_User;
 
 class Manager {
 
@@ -14,12 +16,18 @@ class Manager {
 	private $options;
 
 	/**
+	 * @var ListSynchronizer
+	 */
+	protected $list_synchronizer;
+
+	/**
 	 * Constructor
 	 * @param array $options
 	 */
-	public function __construct( array $options ) {
+	public function __construct( array $options, $list_synchronizer ) {
 		$this->options = $options;
 		$this->plugin_slug = basename( Plugin::DIR ) . '/mailchimp-sync.php';
+		$this->list_synchronizer = $list_synchronizer;
 	}
 
 	/**
@@ -36,7 +44,7 @@ class Manager {
 	public function init() {
 
 		// only run for administrators
-		if( ! current_user_can( 'manage_options' ) ) {
+		if( ! current_user_can( self::SETTINGS_CAP ) ) {
 			return false;
 		}
 
@@ -46,6 +54,10 @@ class Manager {
 		// add link to settings page from plugins page
 		add_filter( 'plugin_action_links_' . $this->plugin_slug, array( $this, 'add_plugin_settings_link' ) );
 		add_filter( 'plugin_row_meta', array( $this, 'add_plugin_meta_links'), 10, 2 );
+
+		// only show this if user has settings cap
+		add_action( 'show_user_profile', array( $this, 'add_user_actions' ) );
+		add_action( 'edit_user_profile', array( $this, 'add_user_actions' ) );
 
 		// listen for wphs requests, user is authorized by now
 		$this->listen();
@@ -79,6 +91,20 @@ class Manager {
 	 */
 	private function listen() {
 
+		if( ! isset( $_GET['mc4wp-sync-action'] ) ) {
+			return false;
+		}
+
+		$action = (string) $_GET['mc4wp-sync-action'];
+
+		switch( $action ) {
+			case 'sync-user':
+				$user_id = intval( $_GET['user_id'] );
+				$success = $this->list_synchronizer->update_subscriber( $user_id );
+
+				// todo: show some visual feedback
+				break;
+		}
 	}
 
 	/**
@@ -101,6 +127,41 @@ class Manager {
 		array_splice( $items, count( $items ) - 1, 0, array( $item ) );
 
 		return $items;
+	}
+
+	/**
+	 *
+	 */
+	public function add_user_actions( WP_User $user ) {
+
+		if( ! $this->list_synchronizer instanceof ListSynchronizer ) {
+			return;
+		}
+
+		$is_subscribed = $this->list_synchronizer->get_user_subscriber_uid( $user );
+		$sync_url = add_query_arg(
+			array(
+				'mc4wp-sync-action' => 'sync-user',
+				'user_id' => $user->ID
+			)
+		);
+		?>
+
+		<h3><?php _e( 'MailChimp Status', 'mailchimp-sync' ); ?></h3>
+
+		<p><?php printf( __( 'To change your list synchronization settings, please go to the <a href="%s">MailChimp Sync settings page</a>.', 'mailchimp-sync' ), admin_url( 'admin.php?page=mailchimp-for-wp-sync' ) ); ?></p>
+
+		<table class="form-table">
+			<tr>
+				<th><?php $is_subscribed ? _e( 'Subscribed', 'mailchimp-for-wp' ) : _e( 'Not Subscribed', 'mailchimp-sync' ); ?></th>
+				<td>
+					<a href="<?php echo esc_url( $sync_url ); ?>" class="button">
+						<?php $is_subscribed ? _e( 'Update' ) : _e( 'Subscribe', 'mailchimp-for-wp' ); ?>
+					</a>
+				</td>
+			</tr>
+		</table>
+		<?php
 	}
 
 	/**
@@ -165,6 +226,9 @@ class Manager {
 			$status_indicator = new StatusIndicator( $this->options['list'], $this->options['role'] );
 			$status_indicator->check();
 			$selected_list = isset( $lists[ $this->options['list'] ] ) ? $lists[ $this->options['list'] ] : null;
+			$field_mapper = new FieldMapper( $this->options['field_mappers'], $selected_list->merge_vars );
+		} else {
+			$field_mapper = new FieldMapper( $this->options['field_mappers'] );
 		}
 
 		require Plugin::DIR . '/views/settings-page.php';
@@ -179,8 +243,18 @@ class Manager {
 		return plugins_url( '/assets' . $url, Plugin::FILE );
 	}
 
+	/**
+	 * @param $option_name
+	 *
+	 * @return string
+	 */
 	protected function name_attr( $option_name ) {
-		return Plugin::OPTION_NAME . '[' . $option_name . ']';
+
+		if( substr( $option_name, -1 ) !== ']' ) {
+			return Plugin::OPTION_NAME . '[' . $option_name . ']';
+		}
+
+		return Plugin::OPTION_NAME . $option_name;
 	}
 
 	/**
@@ -192,6 +266,20 @@ class Manager {
 
 		// todo: perform some actual sanitization
 		$clean = $dirty;
+
+		if( isset( $clean['field_mappers'] ) ) {
+
+			if( ! is_array( $clean['field_mappers'] ) ) {
+				unset( $clean['field_mappers'] );
+			}
+
+			foreach( $clean['field_mappers'] as $key=> $mapper ) {
+				if( empty( $mapper['user_field'] ) || empty( $mapper['mailchimp_field'] ) ) {
+					unset( $clean['field_mappers'][ $key ] );
+				}
+			}
+
+		}
 
 		return $clean;
 	}
@@ -217,6 +305,8 @@ class Manager {
 
 		return array();
 	}
+
+
 
 
 }
