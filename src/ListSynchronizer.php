@@ -70,9 +70,17 @@ class ListSynchronizer {
 	 */
 	public function add_hooks() {
 		// hook into the various user related actions
-		add_action( 'user_register', array( $this, 'subscribe_user' ) );
-		add_action( 'profile_update', array( $this, 'update_subscriber' ) );
-		add_action( 'delete_user', array( $this, 'unsubscribe_user' ) );
+		add_action( 'user_register', array( $this, 'subscribe_user' ), 99 );
+		add_action( 'profile_update', array( $this, 'update_subscriber' ), 99 );
+		add_action( 'delete_user', array( $this, 'unsubscribe_user' ), 99 );
+
+		// hook into action that runs after updating WooCommerce order meta
+		add_action( 'woocommerce_checkout_update_user_meta', array( $this, 'update_subscriber' ) );
+
+		// custom actions for people to use if they want to call the class actions
+		add_action( 'mailchimp_sync_subscribe_user', array( $this, 'subscribe_user' ), 99 );
+		add_action( 'mailchimp_sync_update_subscriber', array( $this, 'update_subscriber' ), 99 );
+		add_action( 'mailchimp_sync_unsubscribe_user', array( $this, 'unsubscribe_user' ), 99 );
 	}
 
 	/**
@@ -106,7 +114,7 @@ class ListSynchronizer {
 			return $subscriber_uid;
 		}
 
-		return '';
+		return null;
 	}
 
 	/**

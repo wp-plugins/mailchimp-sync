@@ -91,7 +91,7 @@ function map_row( $index, $user_field, $mailchimp_field ) {
 
 			<tr valign="top">
 				<th scope="row">
-					<label>Send Additional Fields</label>
+					<label><?php _e( 'Send Additional Fields', 'mailchimp-sync' ); ?></label>
 				</th>
 				<td colspan="2" class="mc4wp-sync-field-map">
 					<?php
@@ -100,25 +100,16 @@ function map_row( $index, $user_field, $mailchimp_field ) {
 						echo '<p>' . __( 'Please select a MailChimp list first (and then save your settings).', 'mailchimp-sync' ) . '</p>';
 					} else {
 
-					foreach( $field_mapper->rules as $index => $rule ) {
+						foreach( $this->options['field_mappers'] as $index => $rule ) {
 						?>
 						<div class="row">
-							<select name="<?php echo $this->name_attr( '[field_mappers]['.$index.'][user_field]' ); ?>" class="user-field">
-								<option value="" readonly selected></option>
-								<?php foreach( $field_mapper->user_fields as $name ) { ?>
-									<option
-										value="<?php echo esc_attr( $name ); ?>"
-										<?php selected( $name, $rule['user_field'] ); ?>>
-										<?php echo strip_tags( $name ); ?>
-									</option>
-								<?php } ?>
-							</select>
+							<input name="<?php echo $this->name_attr( '[field_mappers]['.$index.'][user_field]' ); ?>" class="user-field regular-text" value="<?php echo esc_attr( $rule['user_field'] ); ?>" placeholder="<?php _e( 'Start typing user field name' ,'mailchimp-sync' ); ?>">
 
-							&nbsp; to &nbsp;
+							&nbsp; <?php _e( 'to', 'mailchimp-sync' ); ?> &nbsp;
 
 							<select name="<?php echo $this->name_attr( '[field_mappers]['.$index.'][mailchimp_field]' ); ?>" class="mailchimp-field">
-								<option value="" readonly selected></option>
-								<?php foreach( $field_mapper->mailchimp_fields as $field ) { ?>
+								<option value="" readonly selected style="display: none;"><?php esc_html_e( 'MailChimp field', 'mailchimp-sync' ); ?></option>
+								<?php foreach( $selected_list->merge_vars as $field ) { ?>
 									<option
 										value="<?php echo esc_attr( $field->tag ); ?>"
 										<?php selected( $field->tag, $rule['mailchimp_field'] ); ?>>
@@ -133,10 +124,10 @@ function map_row( $index, $user_field, $mailchimp_field ) {
 							} ?>
 						</div>
 						<?php
-					}
-					?>
+						}
+						?>
 
-					<p><input type="button" class="button add-row" value="&plus; Add line" /></p>
+						<p><input type="button" class="button add-row" value="&plus; <?php esc_attr_e( 'Add line', 'mailchimp-sync' ); ?>" /></p>
 
 					<?php } ?>
 				</td>
@@ -207,7 +198,7 @@ function map_row( $index, $user_field, $mailchimp_field ) {
 
 	<p><?php _e( 'Any errors that may occur trying to synchronize changes with MailChimp will show up here.', 'mailchimp-sync' ); ?></p>
 
-	<textarea class="widefat" rows="10" readonly><?php echo trim( $log->read() ); ?></textarea>
+	<textarea class="widefat" rows="6" readonly><?php echo trim( $log->read() ); ?></textarea>
 
 	<p>
 		<a class="button" href="<?php echo add_query_arg( array( 'mc4wp-sync-action' => 'clear-log' ) ); ?>"><?php _e( 'Clear Log', 'mailchimp-sync' ); ?></a>

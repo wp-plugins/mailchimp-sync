@@ -1,16 +1,18 @@
-=== MailChimp Sync ===
+=== MailChimp User Sync ===
 Contributors: Ibericode, DvanKooten, iMazed, hchouhan
 Donate link: https://mc4wp.com/#utm_source=wp-plugin-repo&utm_medium=mailchimp-sync&utm_campaign=donate-link
 Tags: mailchimp,users,sync,mailchimp list,synchronize,zapier,woocommerce,mc4wp
 Requires at least: 3.8
-Tested up to: 4.3
-Stable tag: 1.1.3
+Tested up to: 4.3.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Synchronize your WordPress Users with a MailChimp list.
 
 == Description ==
+
+= MailChimp User Sync =
 
 Synchronize your registered WordPress users with a MailChimp list of your choice.
 
@@ -112,12 +114,39 @@ wp mailchimp-sync sync-user $user_id	 			# synchronize the user specified by the
 
 This is especially useful for synchronising a huge amount of users.
 
+= Does this plugin synchronize data back from MailChimp? =
+
+Not by default, but you can enable this by [configuring a webhook in your MailChimp account](https://mc4wp.com/kb/configure-webhook-for-2-way-synchronizing/).
+
 == Screenshots ==
 
 1. Synchronization settings
 2. Status overview
 
 == Changelog ==
+
+= 1.2.2 - October 7, 2015 =
+
+**Additions**
+
+- Introduced 2 new filters (`mailchimp_sync_webhook_user` and `mailchimp_sync_webhook_no_user`) which allow you to hook into the MailChimp webhook listener to specify the WP user or do something when there is no user for the MailChimp subscriber. [Here is a code example that creates a new user when the subscriber has no user account](https://gist.github.com/dannyvankooten/79fe429daaef611b6aa5).
+
+= 1.2.1 - October 1, 2015 =
+
+**Improvements**
+
+- For mapping user fields, you can now manually type the "meta key" value of the field. Comes with autocomplete if you have users with that field already.
+- For WooCommerce checkout: run after custom fields have been added
+
+**Fixes**
+
+- Newly added rows could not be removed unless page was refreshed again.
+
+= 1.2 - September 24, 2015 =
+
+**Additions**
+
+- Added support for MailChimp webhooks, so data can be synchronized from MailChimp to WordPress as well.  To enable this, you need to [configure a webhook in your MailChimp account](https://mc4wp.com/kb/configure-webhook-for-2-way-synchronizing/).
 
 = 1.1.3 - September 9, 2015 =
 
@@ -220,5 +249,5 @@ Initial release.
 
 == Upgrade Notice ==
 
-= 1.0.1 =
-Forced Sync will now start with unsynced users and show more detailed error messages.
+= 1.2 =
+Add support for MailChimp webhooks to enable 2-way synchronizing.

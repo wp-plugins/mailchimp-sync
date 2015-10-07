@@ -216,10 +216,9 @@ class Manager {
 		$min = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 
 		wp_enqueue_style( 'mailchimp-sync-admin', $this->asset_url( "/css/admin{$min}.css" ) );
-
 		wp_enqueue_script( 'es5-polyfill', 'https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.0.3/es5-shim.min.js' );
 		wp_enqueue_script( 'mithril', $this->asset_url( "/js/mithril{$min}.js" ), array( 'es5-polyfill' ), Plugin::VERSION, true );
-		wp_enqueue_script( 'mailchimp-sync-wizard', $this->asset_url( "/js/admin{$min}.js" ), array( 'mithril' ), Plugin::VERSION, true );
+		wp_enqueue_script( 'mailchimp-sync-wizard', $this->asset_url( "/js/admin{$min}.js" ), array( 'mithril', 'suggest', 'jquery' ), Plugin::VERSION, true );
 
 		return true;
 	}
@@ -238,10 +237,10 @@ class Manager {
 			$status_indicator = new StatusIndicator( $this->options['list'], $this->options['role'] );
 			$status_indicator->check();
 			$selected_list = isset( $lists[ $this->options['list'] ] ) ? $lists[ $this->options['list'] ] : null;
-			$field_mapper = new FieldMapper( $this->options['field_mappers'], $selected_list->merge_vars );
-		} else {
-			$field_mapper = new FieldMapper( $this->options['field_mappers'] );
 		}
+
+		$this->options['field_mappers'] = array_values( $this->options['field_mappers'] );
+		$this->options['field_mappers'][] = array( 'user_field' => '', 'mailchimp_field' => '' );
 
 		require Plugin::DIR . '/views/settings-page.php';
 	}
@@ -287,14 +286,23 @@ class Manager {
 
 		if( isset( $clean['field_mappers'] ) ) {
 
+			// make sure this is an array
 			if( ! is_array( $clean['field_mappers'] ) ) {
 				unset( $clean['field_mappers'] );
 			}
 
 			foreach( $clean['field_mappers'] as $key=> $mapper ) {
+
 				if( empty( $mapper['user_field'] ) || empty( $mapper['mailchimp_field'] ) ) {
 					unset( $clean['field_mappers'][ $key ] );
+					continue;
 				}
+
+				// trim values
+				$clean['field_mappers'][ $key ] = array(
+					'user_field' => trim( $mapper['user_field'] ),
+					'mailchimp_field' => trim( $mapper['mailchimp_field'] )
+				);
 			}
 
 		}
