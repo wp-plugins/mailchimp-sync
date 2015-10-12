@@ -66,10 +66,10 @@ class Listener {
 	public function handle() {
 
 		$data = stripslashes_deep( $_REQUEST['data'] );
-		$dirty = false;
+		$type = ( ! empty( $_REQUEST['type'] ) ) ? $_REQUEST['type'] : '';
 
 		// do nothing if no "type" or "web_id" is given
-		if( empty( $data['type'] ) || empty( $data['web_id'] ) ) {
+		if( empty( $type ) || empty( $data['web_id'] ) ) {
 			return false;
 		}
 
@@ -77,7 +77,7 @@ class Listener {
 		$user = $this->user_repository->get_user_by_mailchimp_id( $data['web_id'] );
 
 		// filter user
-		$user = apply_filters( 'mailchimp_sync_webhook_user', $data, $user );
+		$user = apply_filters( 'mailchimp_sync_webhook_user', $user, $data );
 
 		if( ! $user instanceof WP_User ) {
 
@@ -89,47 +89,45 @@ class Listener {
 			return false;
 		}
 
+		$new_user_data = array();
+
 		// update user email if it's given, valid and different
 		if( ! empty( $data['email'] ) && is_email( $data['email'] ) && $data['email'] !== $user->user_email ) {
-			$user->user_email = $data['email'];
-			$dirty = true;
+			$new_user_data['user_email'] = $data['email'];
 		}
 
 		// update WP user with data (use reversed field map)
-		if( ! empty( $this->options['field_mappers'] ) ) {
+		// loop through mapping rules
+		foreach( $this->options['field_mappers'] as $rule ) {
 
-			// loop through mapping rules
-			foreach( $this->options['field_mappers'] as $rule ) {
+			// is this field present in the request data?
+			if( isset( $data['merges'][ $rule['mailchimp_field'] ] ) ) {
 
-				// is this field present in the request data?
-				if( isset( $data['merges'][ $rule['mailchimp_field'] ] ) ) {
-
-					// is scalar value?
-					$value = $data['merges'][ $rule['mailchimp_field'] ];
-					if( ! is_scalar( $value ) ) {
-						continue;
-					}
-
-					// update user property if it changed
-					if( $user->{$rule['user_field']} !== $value ) {
-						$user->{$rule['user_field']} = $value;
-						$dirty = true;
-					}
+				// is scalar value?
+				$value = $data['merges'][ $rule['mailchimp_field'] ];
+				if( ! is_scalar( $value ) ) {
+					continue;
 				}
 
+				// update user property if it changed
+				if( $user->{$rule['user_field']} !== $value ) {
+					$new_user_data[ $rule['user_field'] ] = $value;
+				}
 			}
+
 		}
 
 		// update user if something changed
-		if( $dirty ) {
-			wp_update_user( $user );
+		if( count( $new_user_data ) > 0 ) {
+			$new_user_data['ID'] = $user->ID;
+			wp_update_user( $new_user_data );
 		}
 
 		// fire event to allow custom actions (like deleting the user)
 		do_action( 'mailchimp_sync_webhook', $data, $user );
 
 		// fire type specific event. Example: mailchimp_sync_webhook_unsubscribe
-		do_action( 'mailchimp_sync_webhook_' . $data['type'], $data, $user );
+		do_action( 'mailchimp_sync_webhook_' . $type, $data, $user );
 
 		echo 'OK';
 	}
