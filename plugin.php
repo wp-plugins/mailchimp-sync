@@ -1,9 +1,9 @@
 <?php
 
-namespace MailChimp\Sync;
+namespace MC4WP\Sync;
 
-use MailChimp\Sync\CLI\CommandProvider;
-use MailChimp\Sync\Webhook;
+use MC4WP\Sync\CLI\CommandProvider;
+use MC4WP\Sync\Webhook;
 
 // Prevent direct file access
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,7 +17,7 @@ final class Plugin {
 	/**
 	 * @const VERSION
 	 */
-	const VERSION = '1.2.3';
+	const VERSION = '1.3';
 
 	/**
 	 * @const FILE
@@ -62,18 +62,7 @@ final class Plugin {
 	public function init() {
 
 		// load plugin options
-		$this->options = $this->load_options();
-
-		// if a list was selected, initialise the ListSynchronizer class
-		if( $this->options['list'] != '' && $this->options['enabled'] ) {
-			$this->list_synchronizer = new ListSynchronizer( $this->options['list'], $this->options['role'], $this->options );
-			$this->list_synchronizer->add_hooks();
-		}
-
-		if( defined( 'WP_CLI' ) && WP_CLI ) {
-			$commands = new CommandProvider();
-			$commands->register();
-		}
+		$this->options = $options = $this->load_options();
 
 		// Load area-specific code
 		if( ! is_admin() ) {
@@ -86,6 +75,23 @@ final class Plugin {
 		} else {
 			$admin = new Admin\Manager( $this->options, $this->list_synchronizer );
 			$admin->add_hooks();
+		}
+
+		// if a list was selected, initialise the ListSynchronizer class
+		if( $this->options['list'] != '' && $this->options['enabled'] ) {
+
+			// @todo make this filterable (wait for DI container in core?)
+			$worker = ( $options['worker_type'] === 'shutdown' ) ? new ShutdownWorker() : new CronWorker();
+			$scheduler = new Producer( $worker );
+			$scheduler->add_hooks();
+
+			$this->list_synchronizer = new ListSynchronizer( $this->options['list'], $this->options['role'], $this->options );
+			$this->list_synchronizer->add_hooks();
+		}
+
+		if( defined( 'WP_CLI' ) && WP_CLI ) {
+			$commands = new CommandProvider();
+			$commands->register();
 		}
 	}
 
@@ -102,12 +108,13 @@ final class Plugin {
 			'send_welcome' => 0,
 			'role' => '',
 			'enabled' => 1,
-			'field_mappers' => array()
+			'field_mappers' => array(),
+			'worker_type' => 'shutdown'
 		);
 
 		$options = array_merge( $defaults, $options );
 
-		return $options;
+		return (array) apply_filters( 'mailchimp_sync_options', $options );
 	}
 
 	/**
@@ -126,7 +133,7 @@ add_action( 'plugins_loaded', function() {
 	if( $ready ) {
 		$plugin = new Plugin();
 		$plugin->init();
-		$GLOBALS['MailChimp_Sync'] = $plugin;
+		$GLOBALS['mailchimp_sync'] = $plugin;
 	}
 
 }, 20 );
